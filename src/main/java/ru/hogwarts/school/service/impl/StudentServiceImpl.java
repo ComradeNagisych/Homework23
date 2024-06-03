@@ -1,7 +1,10 @@
 package ru.hogwarts.school.service.impl;
 
 import org.springframework.stereotype.Service;
+import ru.hogwarts.school.exception.FacultyNotFoundException;
+import ru.hogwarts.school.exception.StudentNotFoundException;
 import ru.hogwarts.school.model.Student;
+import ru.hogwarts.school.repository.StudentRepository;
 import ru.hogwarts.school.service.StudentService;
 
 import java.util.HashMap;
@@ -12,38 +15,47 @@ import java.util.stream.Collectors;
 @Service
 public class StudentServiceImpl implements StudentService {
 
-    private final Map<Long, Student> studentMap = new HashMap<>();
-    private static Long currentId = 0L;
+    private final StudentRepository studentRepository;
+
+    public StudentServiceImpl(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
+    }
+
     @Override
     public Student create(Student student) {
-        student.setId(++currentId);
-        studentMap.put(student.getId(), student);
-        return student;
+        student.setId(null);
+        return studentRepository.save(student);
     }
 
     @Override
     public Student read(Long id) {
-        return studentMap.get(id);
+        return studentRepository.findById(id)
+                .orElseThrow(() -> new StudentNotFoundException(id));
     }
 
     @Override
     public Student update(Long id, Student student) {
-        Student existingStudent = studentMap.get(id);
-        existingStudent.setAge(student.getAge());
-        existingStudent.setName(student.getName());
-        return existingStudent;
+        return studentRepository.findById(id)
+                .map(oldStudent -> {
+                    oldStudent.setName(student.getName());
+                    oldStudent.setAge(student.getAge());
+                    return studentRepository.save(oldStudent);
+                })
+                .orElseThrow(() -> new StudentNotFoundException(id));
     }
 
     @Override
     public Student delete(Long id) {
-        return studentMap.remove(id);
+        return studentRepository.findById(id)
+                .map(student -> {
+                    studentRepository.delete(student);
+                    return student;
+                })
+                .orElseThrow(() -> new StudentNotFoundException(id));
     }
 
     @Override
     public List<Student> filterByAge(int age) {
-        return studentMap.values()
-                .stream()
-                .filter(student -> student.getAge() == age)
-                .collect(Collectors.toList());
+        return studentRepository.findByAge(age);
     }
 }

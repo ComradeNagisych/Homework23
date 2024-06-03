@@ -1,8 +1,10 @@
 package ru.hogwarts.school.service.impl;
 
 import org.springframework.stereotype.Service;
+import ru.hogwarts.school.exception.FacultyNotFoundException;
 import ru.hogwarts.school.model.Faculty;
 import ru.hogwarts.school.model.Student;
+import ru.hogwarts.school.repository.FacultyRepository;
 import ru.hogwarts.school.service.FacultyService;
 
 import java.util.HashMap;
@@ -12,36 +14,48 @@ import java.util.stream.Collectors;
 
 @Service
 public class FacultyServiceImpl implements FacultyService {
-    private final Map<Long, Faculty> facultyMap = new HashMap<>();
-    private static Long currentId = 0L;
+    private final FacultyRepository facultyRepository;
+
+    public FacultyServiceImpl(FacultyRepository facultyRepository) {
+        this.facultyRepository = facultyRepository;
+    }
+
     @Override
     public Faculty create(Faculty faculty) {
-        faculty.setId(++currentId);
-        facultyMap.put(faculty.getId(), faculty);
-        return faculty;
+        faculty.setId(null);
+        return facultyRepository.save(faculty);
     }
 
     @Override
     public Faculty read(Long id) {
-        return facultyMap.get(id);
+        return facultyRepository.findById(id)
+                .orElseThrow(() -> new FacultyNotFoundException(id));
     }
 
     @Override
     public Faculty update(Long id, Faculty faculty) {
-        Faculty existingFaculty = facultyMap.get(id);
-        existingFaculty.setName(faculty.getName());
-        existingFaculty.setColor(faculty.getColor());
-        return existingFaculty;
+        return facultyRepository.findById(id)
+                .map(oldFaculty -> {
+                    oldFaculty.setName(faculty.getName());
+                    oldFaculty.setColor(faculty.getColor());
+                    return facultyRepository.save(oldFaculty);
+                })
+                .orElseThrow(() -> new FacultyNotFoundException(id));
     }
 
     @Override
     public Faculty delete(Long id) {
-        return facultyMap.remove(id);
+        return facultyRepository.findById(id)
+                .map(faculty -> {
+                    facultyRepository.delete(faculty);
+                    return faculty;
+                })
+                .orElseThrow(() -> new FacultyNotFoundException(id));
     }
 
     @Override
     public List<Faculty> filterByColor(String color) {
-        return facultyMap.values()
+        return facultyRepository.findAll()
                 .stream()
                 .filter(faculty -> faculty.getColor().equals(color))
                 .collect(Collectors.toList());
