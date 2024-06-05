@@ -5,6 +5,7 @@ import ru.hogwarts.school.exception.FacultyNotFoundException;
 import ru.hogwarts.school.model.Faculty;
 import ru.hogwarts.school.model.Student;
 import ru.hogwarts.school.repository.FacultyRepository;
+import ru.hogwarts.school.repository.StudentRepository;
 import ru.hogwarts.school.service.FacultyService;
 
 import java.util.HashMap;
@@ -15,9 +16,11 @@ import java.util.stream.Collectors;
 @Service
 public class FacultyServiceImpl implements FacultyService {
     private final FacultyRepository facultyRepository;
+    private final StudentRepository studentRepository;
 
-    public FacultyServiceImpl(FacultyRepository facultyRepository) {
+    public FacultyServiceImpl(FacultyRepository facultyRepository, StudentRepository studentRepository) {
         this.facultyRepository = facultyRepository;
+        this.studentRepository = studentRepository;
     }
 
     @Override
@@ -59,5 +62,15 @@ public class FacultyServiceImpl implements FacultyService {
                 .stream()
                 .filter(faculty -> faculty.getColor().equals(color))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Faculty> filterByNameOrColor(String nameOrColor) {
+        return facultyRepository.filterByNameIgnoreCaseOrColorIgnoreCase(nameOrColor, nameOrColor);
+    }
+
+    @Override
+    public List<Student> findStudentsFromFaculty(Long facultyId) {
+        return studentRepository.filterByFaculty_Id(facultyId);
     }
 }

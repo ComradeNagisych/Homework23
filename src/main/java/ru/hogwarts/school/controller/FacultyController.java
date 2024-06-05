@@ -35,4 +35,12 @@ public class FacultyController {
     public List<Faculty> filterByColor(@RequestParam String color) {
         return facultyService.filterByColor(color);
     }
+    @GetMapping(params = "!color")
+    public List<Faculty> filterByNameOrColor(@RequestParam String nameOrColor) {
+        return facultyService.filterByNameOrColor(nameOrColor);
+    }
+    @GetMapping("/{id}/students")
+    public List<Student> findStudentsFromFaculty(@PathVariable Long id) {
+        return facultyService.findStudentsFromFaculty(id);
+    }
 }
